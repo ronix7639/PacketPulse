@@ -1,4 +1,4 @@
-# Network Packet Sniffer 🛡️
+# Packet Pulse 🛡️
 
 ## Introduction ℹ️
 
