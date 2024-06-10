@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> 🛡️ Network Packet Sniffer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kepler:wght@400;700&family=Raleway:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Raleway', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0E1821;
+            color: #F2F3F4;
+        }
+        h1 {
+            text-align: center;
+            color: #854CE6;
+            font-family: 'Raleway', sans-serif;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            color: #F2F3F4;
+        }
+        input[type="text"],
+        input[type="submit"],
+        button {
+            width: 150px;
+            padding: 8px;
+            border: none;
+            color: #0E1821;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        input[type="text"] {
+            border: 1px solid #0E1821;
+            background-color: #171721;
+            color: #F2F3F4;
+            transition: background-color 0.3s, border-color 0.3s, border-width 0.3s;
+        }
+        
+        input[type="text"]:hover {
+            background-color: #1E1E2E;
+            border: 1px solid #0E1821;
+        }
+        
+        input[type="submit"],
+        button {
+            background: linear-gradient(45deg, #367378, #336e70);
+        }
+        
+        input[type="submit"]:hover,
+        button:hover {
+            background: linear-gradient(45deg, #2c5b5f, #295559);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        table, th, td {
+            border: 1px solid #F2F3F4;
+        }
+        th {
+            background-color: #191924;
+            color: #F2F3F4;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Network Packet Sniffer</h1>
+    <form method="POST" action="/start">
+        <label for="interface">Network Interface:</label>
+        <input type="text" id="interface" name="interface" required>
+        <input type="submit" value="Start Session">
+    </form>
+    <button onclick="stopSession()">Stop Session</button>
+    <span style="margin: 0 10px;"></span>
+    <button onclick="exportLogs()">Export Logs as Excel</button>
+    <h2>Captured Packets</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Source IP</th>
+                <th>Destination IP</th>
+                <th>Protocol</th>
+                <th>Source Port</th>
+                <th>Destination Port</th>
+            </tr>
+        </thead>
+        <tbody id="packetTableBody">
+        </tbody>
+    </table>
+
+    <script>
+        function stopSession() {
+            fetch('/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => console.error('Error:', error));
+        }
+
+        function exportLogs() {
+            fetch('/export', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();
+                    }
+                    throw new Error('Network response was not ok.');
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'packet_logs.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function fetchPackets() {
+            fetch('/packets')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('packetTableBody');
+                    tableBody.innerHTML = '';
+                    data.forEach(packet => {
+                        const row = document.createElement('tr');
+                        const srcIp = document.createElement('td');
+                        srcIp.textContent = packet.src_ip || '-';
+                        const dstIp = document.createElement('td');
+                        dstIp.textContent = packet.dst_ip || '-';
+                        const protocol = document.createElement('td');
+                        protocol.textContent = packet.protocol || '-';
+                        const srcPort = document.createElement('td');
+                        srcPort.textContent = packet.src_port || '-';
+                        const dstPort = document.createElement('td');
+                        dstPort.textContent = packet.dst_port || '-';
+                        row.appendChild(srcIp);
+                        row.appendChild(dstIp);
+                        row.appendChild(protocol);
+                        row.appendChild(srcPort);
+                        row.appendChild(dstPort);
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        setInterval(fetchPackets, 1000);
+    </script>
+</body>
+</html>
